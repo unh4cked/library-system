@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ورود - سامانه کتاب‌خانه</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v33.003/dist/font-face.css" rel="stylesheet">
+    <link rel="stylesheet" href="./css/styles.css" />
+  </head>
+  <body>
+    <div class="bg-animated"></div>
+
+    <div class="login-container">
+      <div class="login-box">
+        <div class="login-header">
+          <h1>سامانه کتاب‌خانه</h1>
+          <p>لطفاً برای ادامه رمز عبور را وارد کنید</p>
+        </div>
+
+        <div class="card">
+          <form id="login-form" class="login-form">
+            <div id="error-message" class="error-message"></div>
+            
+            <label>
+              رمز عبور
+              <div class="password-input-wrapper">
+                <input 
+                  type="password" 
+                  id="password-input" 
+                  name="password" 
+                  required 
+                  placeholder="رمز عبور را وارد کنید"
+                  autocomplete="current-password"
+                />
+                <button type="button" class="toggle-password" id="toggle-password">
+                  نمایش
+                </button>
+              </div>
+            </label>
+
+            <button type="submit" class="btn primary full-width">
+              ورود به سیستم
+            </button>
+          </form>
+        </div>
+
+        <p class="hint text-center">
+          🔒 دسترسی محدود به کارمندان مجاز
+        </p>
+      </div>
+    </div>
+
+    <script>
+      // Initialize animated background
+      function initAnimatedBackground() {
+        const host = document.querySelector('.bg-animated');
+        if (!host) return;
+        const paragraph = `کتابخانه یکی از مهم‌ترین مراکز فرهنگی و علمی هر جامعه است که نقش اساسی در گسترش دانش و ارتقای سطح آگاهی افراد ایفا می‌کند. در کتابخانه‌ها منابع متنوعی مانند کتاب، مجله، روزنامه، پایان‌نامه، مقالات علمی و حتی منابع دیجیتال گردآوری و در اختیار علاقه‌مندان قرار می‌گیرد.`;
+        const words = paragraph.split(/\s+/).filter(Boolean);
+        const fonts = ['font-vazir', 'font-iransansx', 'font-sahel', 'font-shabnam', 'font-vazirmatn'];
+        const sizes = ['size-95', 'size-110', 'size-100', 'size-120', 'size-90'];
+
+        function buildLine(startIndex, count) {
+          const line = document.createElement('div');
+          line.className = 'bg-line';
+          const end = startIndex + count;
+          for (let i = startIndex; i < end; i++) {
+            const w = words[i % words.length];
+            const span = document.createElement('span');
+            const fontIdx = Math.floor((i - startIndex) / 3) % fonts.length;
+            const sizeIdx = (i - startIndex) % sizes.length;
+            span.className = `bg-chunk ${fonts[fontIdx]} ${sizes[sizeIdx]}`;
+            span.textContent = w;
+            line.appendChild(span);
+            if ((i - startIndex + 1) % 3 === 0) {
+              const sep = document.createElement('span');
+              sep.textContent = '  ';
+              line.appendChild(sep);
+            }
+          }
+          return line;
+        }
+
+        const columns = 2;
+        const linesPerCol = 10;
+        const totalLines = columns * linesPerCol;
+        const wordsPerLine = 28;
+
+        for (let c = 0; c < columns; c++) {
+          for (let i = 0; i < linesPerCol; i++) {
+            const idx = c * linesPerCol + i;
+            const l = buildLine(idx * 16, wordsPerLine);
+            const topPct = -20 + (140 * idx) / (totalLines - 1);
+            l.style.top = `calc(${topPct}vh)`;
+            l.style.right = c === 0 ? '-12vw' : '18vw';
+            l.style.setProperty('--delay', `${-(idx * 5 + c * 3)}s`);
+            host.appendChild(l);
+          }
+        }
+      }
+
+      initAnimatedBackground();
+
+      // Login logic with backend authentication
+      const API_BASE = 'http://127.0.0.1:8000';
+      const form = document.getElementById('login-form');
+      const passwordInput = document.getElementById('password-input');
+      const errorMessage = document.getElementById('error-message');
+      const togglePassword = document.getElementById('toggle-password');
+
+      // Toggle password visibility
+      togglePassword.addEventListener('click', () => {
+        const type = passwordInput.type === 'password' ? 'text' : 'password';
+        passwordInput.type = type;
+        togglePassword.textContent = type === 'password' ? 'نمایش' : 'مخفی';
+      });
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const password = passwordInput.value;
+
+        try {
+          // Call backend authentication endpoint
+          const response = await fetch(`${API_BASE}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: password })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            // Set session
+            sessionStorage.setItem('library_authenticated', 'true');
+            sessionStorage.setItem('library_login_time', new Date().toISOString());
+            
+            // Redirect to main page
+            window.location.href = './index.html';
+          } else {
+            const error = await response.json();
+            // Show error
+            errorMessage.textContent = '❌ ' + (error.detail || 'رمز عبور اشتباه است');
+            errorMessage.classList.add('show');
+            passwordInput.value = '';
+            passwordInput.focus();
+            
+            // Shake animation
+            form.style.animation = 'shake 0.5s';
+            setTimeout(() => {
+              form.style.animation = '';
+            }, 500);
+          }
+        } catch (err) {
+          // Fallback to offline mode or show connection error
+          errorMessage.textContent = '❌ خطا در اتصال به سرور';
+          errorMessage.classList.add('show');
+          console.error('Login error:', err);
+        }
+      });
+    </script>
+  </body>
+</html>

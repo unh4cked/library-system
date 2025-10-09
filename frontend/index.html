@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>کتاب‌خانه مدرسه</title>
+    <script>
+      // Check authentication before page loads
+      (function() {
+        const isAuthenticated = sessionStorage.getItem('library_authenticated');
+        if (!isAuthenticated || isAuthenticated !== 'true') {
+          window.location.href = './login.html';
+        }
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v33.003/dist/font-face.css" rel="stylesheet">
+    <link href="https://cdn.fontcdn.ir/Font/Persian/IRANSansX/IRANSansX.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/sahel-font@v1.0.2/dist/font-face.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/shabnam-font@v5.0.1/dist/font-face.css" rel="stylesheet">
+    <link rel="stylesheet" href="./css/styles.css" />
+  </head>
+  <body>
+    <div class="bg-animated"></div>
+
+    <main class="app-shell">
+      <header class="app-header">
+        <h1>سامانه کتاب‌خانه</h1>
+        <p class="subtitle">مدیریت کتاب‌ها، هنرجویان و امانت‌ها</p>
+        <button id="logout-btn" class="btn danger logout-btn">
+          خروج
+        </button>
+      </header>
+
+      <nav class="tabs" role="tablist" aria-label="ناوبری تب‌ها">
+        <button class="tab active" data-tab="tab-add-book" aria-selected="true">افزودن کتاب</button>
+        <button class="tab" data-tab="tab-loan" aria-selected="false">ثبت امانت</button>
+        <button class="tab" data-tab="tab-students" aria-selected="false">لیست هنرجویان</button>
+        <button class="tab" data-tab="tab-loans" aria-selected="false">امانت‌ها</button>
+        <button class="tab" data-tab="tab-reports" aria-selected="false">گزارشات</button>
+      </nav>
+
+      <section id="tab-add-book" class="tab-panel active" role="tabpanel">
+        <div class="card">
+          <h2>افزودن کتاب جدید</h2>
+          <form id="form-add-book" class="form-grid">
+            <label class="full">
+              نام کتاب
+              <input type="text" name="title" required placeholder="مثلاً: شازده کوچولو" />
+            </label>
+            <label class="full">
+              دسته‌بندی (اختیاری)
+              <select name="category" id="book-category">
+                <option value="">در حال بارگذاری...</option>
+              </select>
+            </label>
+            <div class="form-actions">
+              <button type="submit" class="btn primary">ثبت کتاب</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h2>آپلود فایل اکسل کتاب‌ها</h2>
+          <p style="color: var(--muted); margin-bottom: 1rem;">
+            <strong>راهنما:</strong> هر شیت نام یک دسته‌بندی است. در هر شیت، ستون "نام کتاب" الزامی است.
+          </p>
+          <form id="form-upload-books-excel" class="form-grid">
+            <label class="full">
+              انتخاب فایل اکسل
+              <input type="file" name="file" accept=".xlsx,.xls" required />
+            </label>
+            <div class="form-actions">
+              <button type="submit" class="btn success">آپلود و ثبت کتاب‌ها</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section id="tab-reports" class="tab-panel" role="tabpanel" hidden>
+        <div class="card">
+          <h2>گزارشات</h2>
+          <form class="form-grid" onsubmit="return false;">
+            <label class="full">
+              جستجوی نام هنرجو
+              <input id="report-search-name" type="text" placeholder="مثلاً: علی رضایی" autocomplete="off" />
+            </label>
+            <label>
+              پایه
+              <select id="report-filter-grade">
+                <option value="">همه پایه‌ها</option>
+                <option value="دهم">دهم</option>
+                <option value="یازدهم">یازدهم</option>
+                <option value="دوازدهم">دوازدهم</option>
+              </select>
+            </label>
+            <label>
+              رشته
+              <select id="report-filter-major">
+                <option value="">همه رشته‌ها</option>
+                <option value="الکترونیک">الکترونیک</option>
+                <option value="الکتروتکنیک">الکتروتکنیک</option>
+                <option value="مکاترونیک">مکاترونیک</option>
+                <option value="عمران">عمران</option>
+                <option value="شبکه">شبکه</option>
+              </select>
+            </label>
+            <div class="form-actions">
+              <button id="btn-export-report" class="btn primary" type="button">گزارش‌گیری (CSV)</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h2>تاریخچه امانت‌ها</h2>
+          <div class="table-wrap">
+            <table id="history-table">
+              <thead>
+                <tr>
+                  <th>نام</th>
+                  <th>نام خانوادگی</th>
+                  <th>پایه</th>
+                  <th>رشته</th>
+                  <th>تاریخ امانت</th>
+                  <th>تاریخ بازگشت</th>
+                  <th>مدت امانت (روز)</th>
+                  <th>مدت تا تحویل (روز)</th>
+                  <th>تاخیر (روز)</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-loan" class="tab-panel" role="tabpanel" hidden>
+        <div class="card">
+          <h2>ثبت امانت</h2>
+          <form id="form-create-loan" class="form-grid">
+            <label class="full">
+              جستجوی کتاب
+              <input id="book-search" type="text" placeholder="شروع به تایپ کنید..." autocomplete="off" />
+              <input type="hidden" id="book-id" />
+              <div id="book-search-results" class="dropdown"></div>
+            </label>
+            <label>
+              شناسه هنرجو (ID)
+              <input id="loan-national-id" type="number" placeholder="شناسه عددی هنرجو" />
+            </label>
+            <label>
+              مدت امانت (روز)
+              <input id="loan-days" type="number" min="1" value="7" />
+            </label>
+            <label class="full">
+              سررسید بازگشت
+              <input id="loan-due" type="text" readonly />
+            </label>
+            <div class="form-actions">
+              <button type="submit" class="btn success">ثبت امانت</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section id="tab-students" class="tab-panel" role="tabpanel" hidden>
+        <div class="card">
+          <h2>افزودن/حذف هنرجو</h2>
+          <form id="form-add-student" class="form-grid">
+            <label>
+              نام
+              <input type="text" name="first_name" required placeholder="مثلاً: علی" />
+            </label>
+            <label>
+              نام خانوادگی
+              <input type="text" name="last_name" required placeholder="مثلاً: رضایی" />
+            </label>
+            <label>
+              پایه
+              <select name="grade" required>
+                <option value="دهم">دهم</option>
+                <option value="یازدهم">یازدهم</option>
+                <option value="دوازدهم">دوازدهم</option>
+              </select>
+            </label>
+            <label>
+              رشته
+              <select name="major" required>
+                <option value="الکترونیک">الکترونیک</option>
+                <option value="الکتروتکنیک">الکتروتکنیک</option>
+                <option value="مکاترونیک">مکاترونیک</option>
+                <option value="عمران">عمران</option>
+                <option value="شبکه">شبکه</option>
+              </select>
+            </label>
+            <div class="form-actions">
+              <button type="submit" class="btn primary">افزودن</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h2>آپلود فایل اکسل دانش‌آموزان</h2>
+          <p style="color: var(--muted); margin-bottom: 1rem;">
+            <strong>راهنما:</strong> هر شیت نام یک رشته است. در هر شیت، ستون‌های "نام"، "نام خانوادگی" و "پایه" الزامی هستند.
+          </p>
+          <form id="form-upload-students-excel" class="form-grid">
+            <label class="full">
+              انتخاب فایل اکسل
+              <input type="file" name="file" accept=".xlsx,.xls" required />
+            </label>
+            <div class="form-actions">
+              <button type="submit" class="btn success">آپلود و ثبت دانش‌آموزان</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h2>لیست هنرجویان</h2>
+          <div class="table-wrap">
+            <table id="students-table">
+              <thead>
+                <tr>
+                  <th>نام کامل</th>
+                  <th>شناسه</th>
+                  <th>پایه</th>
+                  <th>رشته</th>
+                  <th>وضعیت</th>
+                  <th>حذف</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-loans" class="tab-panel" role="tabpanel" hidden>
+        <div class="card">
+          <h2>فیلتر امانت‌ها</h2>
+          <div class="filters">
+            <select id="filter-grade">
+              <option value="">همه پایه‌ها</option>
+              <option value="دهم">دهم</option>
+              <option value="یازدهم">یازدهم</option>
+              <option value="دوازدهم">دوازدهم</option>
+            </select>
+            <select id="filter-major">
+              <option value="">همه رشته‌ها</option>
+              <option value="الکترونیک">الکترونیک</option>
+              <option value="الکتروتکنیک">الکتروتکنیک</option>
+              <option value="مکاترونیک">مکاترونیک</option>
+              <option value="عمران">عمران</option>
+              <option value="شبکه">شبکه</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>لیست امانت‌ها</h2>
+          <div class="table-wrap">
+            <table id="loans-table">
+              <thead>
+                <tr>
+                  <th>نام هنرجو</th>
+                  <th>کتاب</th>
+                  <th>تاریخ امانت</th>
+                  <th>تاریخ سررسید</th>
+                  <th>وضعیت</th>
+                  <th>عملیات</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    </main>
+
+    <script src="./js/app.js" defer></script>
+  </body>
+</html>

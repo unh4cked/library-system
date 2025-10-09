@@ -1,0 +1,14 @@
+# Database
+library.db
+
+.win*
+
+# Python
+__pycache__/
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
